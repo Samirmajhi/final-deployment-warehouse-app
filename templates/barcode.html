@@ -58,7 +58,7 @@
             // Function to fetch barcode data
             async function fetchBarcodeData(date) {
                 try {
-                    const response = await fetch(`http://127.0.0.1:5000/barcode.html?date=${date}`);
+                    const response = await fetch(`/barcode.html?date=${date}`);
                     if (!response.ok) {
                         throw new Error('Failed to fetch barcode data');
                     }

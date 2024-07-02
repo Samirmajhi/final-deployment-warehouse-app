@@ -57,7 +57,7 @@
             <div class="date">
                 <input type="date" id="selected_date">
             </div>
-            <form id="status_form" action="http://127.0.0.1:5000/set_status" method="POST">
+            <form id="status_form" action="/set_status" method="POST">
                 <label for="status">Select Status:</label>
                 <select id="status" name="selectedStatus">
                     <option value="Entry">Entry</option>
@@ -156,7 +156,7 @@
             <script>
                 async function fetchRecentScans() {
                     try {
-                        const response = await fetch('http://127.0.0.1:5000/recent_scans');
+                        const response = await fetch('/recent_scans');
                         const scans = await response.json();
                         const tableBody = document.getElementById('recent-scans-body');
                         tableBody.innerHTML = '';  // Clear existing rows
@@ -214,7 +214,7 @@
                     var selectedStatus = $('#status').val();
                     console.log('Form submitted with status', selectedStatus);
                     $.ajax({
-                        url: 'http://127.0.0.1:5000/set_status',
+                        url: '/set_status',
                         type: 'POST',
                         data: {selectedStatus: selectedStatus},
                         success: function(response) {
@@ -231,7 +231,7 @@
                 $('#camera-button').click(function(e) {
                     e.preventDefault();
                     $.ajax({
-                        url: 'http://127.0.0.1:5000/execute_camera_script',
+                        url: '/execute_camera_script',
                         type: 'POST',
                         contentType: 'application/json',
                         data: JSON.stringify({ status: $('#status').val() }),  // Send the selected status
@@ -275,7 +275,7 @@
                 function fetchInventories(selectedDate, status) {
     console.log('Generating ' + status + ' Inventories list for:', selectedDate);
     $.ajax({
-        url: 'http://127.0.0.1:5000/get_inventories',
+        url: '/get_inventories',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({ timestamp: selectedDate, Status: status }),

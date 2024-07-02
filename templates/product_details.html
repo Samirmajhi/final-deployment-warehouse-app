@@ -86,7 +86,7 @@
     window.addEventListener('DOMContentLoaded', function() {
         let ean = getQueryParam('ean');
         if (ean) {
-            fetch(`http://127.0.0.1:5000/product_details/${ean}`)
+            fetch(`/product_details/${ean}`)
             .then(response => response.json())
             .then(data => {
                 console.log('Data received from API:', data); // Log the data received from the API
