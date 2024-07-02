@@ -20,7 +20,7 @@ app = Flask(__name__,static_url_path='/static')
 CORS(app)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 db_connection = mysql.connector.connect(
-    host="10.38.176.3",
+    host="localhost",
     user="fishtail_123",
     password='#fishtail@This7',
     port = 3306,
@@ -36,7 +36,7 @@ from flask import g
 def get_db():
     if 'db' not in g:
         g.db = mysql.connector.connect(
-            host="10.38.176.3",
+            host="localhost",
             user="fishtail_123",
             password='#fishtail@This7',
             port=3306,
@@ -185,7 +185,7 @@ logger.addHandler(file_handler)
 @app.route('/add_product', methods=['POST'])
 def add_product():
     db_connection = mysql.connector.connect(
-    host="10.38.176.3",
+    host="localhost",
     user="fishtail_123",
     password='#fishtail@This7',
     port = 3306,
@@ -215,7 +215,7 @@ def add_product():
 def get_recent_scans():
     try:
         db_connection = mysql.connector.connect(
-    host="10.38.176.3",
+    host="localhost",
     user="fishtail_123",
     password='#fishtail@This7',
     port = 3306,
@@ -240,7 +240,7 @@ def get_recent_scans():
 def get_product_details(ean):
     try:
         db_connection = mysql.connector.connect(
-            host="10.38.176.3",
+            host="localhost",
             user="fishtail_123",
             password='#fishtail@This7',
             port=3306,
@@ -334,7 +334,7 @@ def get_products():
     offset = (page - 1) * per_page
 
     db_connection = mysql.connector.connect(
-        host="10.38.176.3",
+        host="localhost",
         user="fishtail_123",
         password='#fishtail@This7',
         port=3306,
@@ -457,7 +457,7 @@ def update_product_status(ean_13, status):
 
 def insert_products_info(ean_13, status, timestamp, scan_count):
     db_connection = mysql.connector.connect(
-                host="10.38.176.3",
+                host="localhost",
                 user="fishtail_123",
                 password='#fishtail@This7',
                 port = 3306,
@@ -554,7 +554,7 @@ def handle_camera(selected_status, response):
 
     try:
         db_connection = mysql.connector.connect(
-            host="10.38.176.3",
+            host="localhost",
             user="fishtail_123",
             password='#fishtail@This7',
             port=3306,
@@ -645,6 +645,73 @@ def handle_camera(selected_status, response):
         if 'cap' in locals():
             cap.release()
             cv2.destroyAllWindows()
+
+@app.route('/process_barcode', methods=['POST'])
+def process_barcode():
+    data = request.json
+    barcode = data.get('barcode')
+    status = data.get('status')
+    
+    if not barcode or len(barcode) != 13 or not barcode.isdigit():
+        return jsonify({'error': 'Invalid EAN-13 barcode'}), 400
+
+    try:
+        db_connection = mysql.connector.connect(
+            host="localhost",
+            user="fishtail_123",
+            password='#fishtail@This7',
+            port=3306,
+            database="fishtail_user"
+        )
+
+        cursor = db_connection.cursor()
+
+        # Check the most recent status
+        cursor.execute("SELECT Status FROM products_info WHERE EAN_13=%s ORDER BY timestamp DESC LIMIT 1", (barcode,))
+        current_status = cursor.fetchone()
+
+        if status == 'Entry':
+            if current_status and current_status[0] == 'Entry':
+                return jsonify({'error': 'Cannot register Entry. Previous Entry exists without an Exit.'}), 400
+        elif status == 'Exit':
+            if not current_status or current_status[0] != 'Entry':
+                return jsonify({'error': 'Cannot register Exit. No corresponding Entry found.'}), 400
+        elif status == 'Examine':
+            cursor.execute("""
+                SELECT 
+                    products_info.scan_id, 
+                    products_info.EAN_13, 
+                    product_detail.Product_Name, 
+                    products_info.Status, 
+                    products_info.timestamp, 
+                    products_info.scan_count
+                FROM 
+                    products_info
+                LEFT JOIN 
+                    product_detail ON products_info.EAN_13 = product_detail.EAN_13
+                WHERE
+                    products_info.EAN_13 = %s
+            """, (barcode,))
+            entries = cursor.fetchall()
+            results = [{'scan_id': entry[0], 'EAN_13': entry[1], 'Product_Name': entry[2], 'Status': entry[3], 'timestamp': str(entry[4]), 'scan_count': entry[5]} for entry in entries]
+            return jsonify({'results': results, 'message': 'Product examined successfully'}), 200
+
+        # Insert new record
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+        scan_count = 1  # Example scan count
+        sql_insert_query = "INSERT INTO products_info (EAN_13, Status, Timestamp, Scan_Count) VALUES (%s, %s, %s, %s)"
+        cursor.execute(sql_insert_query, (barcode, status, timestamp, scan_count))
+        db_connection.commit()
+
+        return jsonify({'message': f'{status} recorded successfully for barcode {barcode}'}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'db_connection' in locals():
+            db_connection.close()
 
 if __name__ == '__main__':
     app.run(debug=True,host='0.0.0.0')
