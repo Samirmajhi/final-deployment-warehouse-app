@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style4.css') }}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Sharp:opsz,wght,FILL,GRAD@24,400,0,0" />
+</head>
+<body>
+    <h1>Search Products</h1>
+    <div id="searchContainer">
+        <input type="text" id="searchInput" placeholder="Enter search term">
+        <button id="searchButton">Search</button>
+    </div>
+    <div id="searchResults"></div>
+    <div id="pagination"></div>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const searchResults = document.getElementById('searchResults');
+        const pagination = document.getElementById('pagination');
+        let currentPage = 1;
+        const perPage = 10;
+
+        function search(term, page) {
+            searchResults.innerHTML = 'Searching...';
+            fetch('/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ search: term, page: page, per_page: perPage })
+            })
+            .then(response => response.json())
+            .then(data => {
+                searchResults.innerHTML = data.html;
+                setupPagination(data.total_pages, data.current_page);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                searchResults.innerHTML = 'An error occurred while searching.';
+            });
+        }
+
+        function setupPagination(totalPages, currentPage) {
+            pagination.innerHTML = '';
+            if (totalPages > 1) {
+                if (currentPage > 1) {
+                    const prevButton = document.createElement('button');
+                    prevButton.innerText = 'Previous';
+                    prevButton.addEventListener('click', () => search(searchInput.value.trim(), currentPage - 1));
+                    pagination.appendChild(prevButton);
+                }
+                for (let i = 1; i <= totalPages; i++) {
+                    const pageButton = document.createElement('button');
+                    pageButton.innerText = i;
+                    pageButton.disabled = i === currentPage;
+                    pageButton.addEventListener('click', () => search(searchInput.value.trim(), i));
+                    pagination.appendChild(pageButton);
+                }
+                if (currentPage < totalPages) {
+                    const nextButton = document.createElement('button');
+                    nextButton.innerText = 'Next';
+                    nextButton.addEventListener('click', () => search(searchInput.value.trim(), currentPage + 1));
+                    pagination.appendChild(nextButton);
+                }
+            }
+        }
+
+        searchButton.addEventListener('click', () => {
+            currentPage = 1;
+            search(searchInput.value.trim(), currentPage);
+        });
+    </script>
+</body>
+</html>

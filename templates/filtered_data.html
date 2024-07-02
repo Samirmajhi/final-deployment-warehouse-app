@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>See List</h1>
+    <div id="status-container"></div>
+    <table id="inventoryTable">
+        <thead>
+            <tr>
+                <th>EAN-13</th>
+                <th>Timestamp</th>
+                <th>Scan Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Inventory data will be populated here -->
+        </tbody>
+    </table>
+    <script>
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const status = urlParams.get('status');
+        const date = urlParams.get('date');
+        const statusContainer = document.getElementById('status-container');
+        const statusElement = document.createElement('p');
+        statusElement.textContent = `Showing ${status} inventories for ${date}`;
+        statusContainer.appendChild(statusElement);
+
+        fetch(`http://127.0.0.1:5000/get_inventories`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ timestamp: date, Status: status })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const tableBody = document.querySelector("#inventoryTable tbody");
+            data.inventories.forEach(inventory => {
+                const row = document.createElement("tr");
+
+                const ean13Cell = document.createElement("td");
+                ean13Cell.textContent = inventory[0];
+                row.appendChild(ean13Cell);
+
+                const timestampCell = document.createElement("td");
+                timestampCell.textContent = inventory[1];
+                row.appendChild(timestampCell);
+
+                const scanCountCell = document.createElement("td");
+                scanCountCell.textContent = inventory[2];
+                row.appendChild(scanCountCell);
+
+                tableBody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const tableContainer = document.getElementById('inventory_table_container');
+            tableContainer.innerHTML = 'Failed to fetch data';
+        });
+    </script>
+</body>
+</html>

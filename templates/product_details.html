@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: white;
+        }
+        .product_details {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    
+    .scan-row {
+        background-color: #f2f2f2;
+    }
+
+    .scan-row td {
+        padding: 10px;
+        border: 1px solid #ccc;
+        text-align: left;
+    }
+
+    .scan-row td.warning {
+        background-color: #ffeeba; /* Light yellow for 'Entry' status */
+    }
+
+    .scan-row td.primary {
+        color: #007bff; /* Blue for 'Primary' status */
+    }
+
+    .scan-row a {
+        text-decoration: none;
+        color: #007bff;
+    }
+
+    .scan-row a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+    </style>
+</head>
+<body>
+<div class="product_details">
+    <h1>Product Details</h1>
+    <table>
+        <tbody id="product-details-body">
+            <!-- Rows will be inserted here by JavaScript -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Function to get query parameter value
+    function getQueryParam(param) {
+        let urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+
+    // When the page is loaded, fetch the product details based on the EAN parameter
+    window.addEventListener('DOMContentLoaded', function() {
+        let ean = getQueryParam('ean');
+        if (ean) {
+            fetch(`http://127.0.0.1:5000/product_details/${ean}`)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Data received from API:', data); // Log the data received from the API
+                let tableBody = document.getElementById('product-details-body');
+                tableBody.innerHTML = '';
+
+                if (data.error) {
+                    tableBody.innerHTML = `<tr><td colspan="2">${data.error}</td></tr>`;
+                } else {
+                    let row = document.createElement('tr');
+                    row.innerHTML = `
+                        <tr>
+                            <th>EAN_13</th>
+                            <td>${data.EAN_13}</td>
+                        </tr>
+                        <tr>
+                            <th>Product Name</th>
+                            <td>${data.Product_Name}</td>
+                        </tr>
+                        <tr>
+                            <th>Product Quantity</th>
+                            <td>${data.Product_Quantity}</td>
+                        </tr>
+                        <tr>
+                            <th>Status</th>
+                            <td>${data.Status}</td>
+                        </tr>
+                    `;
+                    tableBody.appendChild(row);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                let tableBody = document.getElementById('product-details-body');
+                tableBody.innerHTML = `<tr><td colspan="2">An error occurred while fetching the product details</td></tr>`;
+            });
+        } else {
+            let tableBody = document.getElementById('product-details-body');
+            tableBody.innerHTML = `<tr><td colspan="2">No product selected</td></tr>`;
+        }
+    });
+</script>
+</body>
+</html>

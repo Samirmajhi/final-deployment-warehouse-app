@@ -1,0 +1,6 @@
+Flask
+flask-cors
+opencv-python
+pyzbar
+mysql-connector-python
+Werkzeug

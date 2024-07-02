@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>See Table</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='barcodes_css.css') }}">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #DetailsTable {
+            width: 90%;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        #productsTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        #productsTable th, #productsTable td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #productsTable th {
+            background-color: #f8f8f8;
+            color: #333;
+            font-weight: bold;
+        }
+
+        #productsTable tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        #productsTable tr:hover {
+            background-color: #e9e9e9;
+        }
+
+        #pagination {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #pagination button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        #pagination button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        #pagination button:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div id="DetailsTable">
+        <h2>Available Products</h2>
+        <table id="productsTable" border="1">
+            <thead>
+                <tr>
+                    <th>Scan_id</th>
+                    <th>EAN_13</th>
+                    <th>Product_Name</th>
+                    <th>Product_Quantity</th>
+                    <th>Status</th>
+                    <th>Scan_Timestamp</th>
+                </tr>
+            </thead>
+            <tbody id="productsTableBody">
+                <!--rows to be displayed through js-->
+            </tbody>
+        </table>
+        <div id="pagination"></div>
+    </div>
+    <script src="{{ url_for('static', filename='see_table.js') }}"></script>
+</body>
+</html>

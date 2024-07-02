@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        .Login {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 2em;
+            border: 1px solid #ccc;
+            border-radius: 1em;
+            text-align: center;
+            position: relative;
+        }
+        .message {
+            margin-bottom: 1em;
+        }
+    </style>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script>
+    function redirectToMainPage() {
+        setTimeout(function() {
+            window.location.href = "{{ url_for('index') }}";
+        }, 3000); // Redirect after 3 seconds
+    }
+</script>
+</head>
+<body>
+<div class="Login">
+    <h1>Login to Fishtail Warehouse</h1>
+    
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="success">
+                {{ messages[0] }}
+            </div>
+            {% if success %}
+                <script>
+                    redirectToMainPage();
+                </script>
+            {% endif %}
+        {% endif %}
+    {% endwith %}
+
+    {% if errors %}
+        <div class="error">
+            
+                {% for error in errors %}
+                    {{ error }}
+                {% endfor %}
+            
+        </div>
+    {% endif %}
+
+    <form id="loginform" action="{{ url_for('login') }}" method="post">
+        <label>Email</label>
+        <input type="text" name="Email" id="loginEmail" placeholder="Enter Your Email" required>
+        <label>Password</label>
+        <input type="password" name="Password" id="loginPassword" placeholder="Enter Your Password" required>
+        <input type="submit" value="Login" name="Login">
+    </form>
+</div>
+
+<p class="me-2">Don't have an account? <a href="{{ url_for('signup') }}">Signup</a></p>
+</body>
+</html>
