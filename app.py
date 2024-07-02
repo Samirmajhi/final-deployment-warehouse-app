@@ -533,33 +533,24 @@ run_camera_thread = True  # Flag to control the camera thread
 
 
 
-# @app.route('/execute_camera_script', methods=['POST'])
-# def execute_camera_script():
-#     print("Camera execution requested")
-#     # selected_status = request.json.get('status')
-#     if selected_status not in ['Entry', 'Exit', 'Examine']:
-#         return jsonify({'error': 'Invalid status'}), 400
+@app.route('/execute_camera_script', methods=['POST'])
+def execute_camera_script():
+    print("Camera execution requested")
+    # selected_status = request.json.get('status')
+    if selected_status not in ['Entry', 'Exit', 'Examine']:
+        return jsonify({'error': 'Invalid status'}), 400
 
-#     response = {'status': selected_status, 'results': []}
-#     camera_thread = threading.Thread(target=handle_camera, args=(selected_status, response))
-#     camera_thread.start()
-#     camera_thread.join()  # Wait for the camera thread to complete
-#     return jsonify(response), 200
-
-@app.route('/process_image', methods=['POST'])
-def process_image():
-    data = request.json
-    image_data = data['image']
-    selected_status = data['status']
-    
-    # Decode base64 image
-    image_data = image_data.split(',')[1]
-    image_bytes = base64.b64decode(image_data)
-    image_array = np.frombuffer(image_bytes, dtype=np.uint8)
-    frame = cv2.imdecode(image_array, flags=cv2.IMREAD_COLOR)
-    
     response = {'status': selected_status, 'results': []}
-    used_codes = set()
+    camera_thread = threading.Thread(target=handle_camera, args=(selected_status, response))
+    camera_thread.start()
+    camera_thread.join()  # Wait for the camera thread to complete
+    return jsonify(response), 200
+
+
+
+def handle_camera(selected_status, response):
+    global run_camera_thread
+    run_camera_thread = True
 
     try:
         db_connection = mysql.connector.connect(
@@ -569,64 +560,80 @@ def process_image():
             port=3306,
             database="fishtail_user"
         )
+
         cursor = db_connection.cursor()
+        cap = cv2.VideoCapture(0)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        used_codes = set()
 
-        barcodes = decode(frame)
-        if barcodes:
-            for code in barcodes:
-                decoded_data = code.data.decode('utf-8')
-                if decoded_data not in used_codes:
-                    print('Approved, Scanned Code:', decoded_data)
-                    ean_13 = decoded_data
+        while run_camera_thread:
+            success, frame = cap.read()
+            if success:
+                barcodes = decode(frame)
+                if barcodes:
+                    for code in barcodes:
+                        decoded_data = code.data.decode('utf-8')
+                        if decoded_data not in used_codes:
+                            print('Approved, Scanned Code:', decoded_data)
+                            ean_13 = decoded_data
 
-                    # Examine logic
-                    if selected_status == 'Examine':
-                        cursor.execute("""
-                            SELECT 
-                                products_info.scan_id, 
-                                products_info.EAN_13, 
-                                product_detail.Product_Name, 
-                                products_info.Status, 
-                                products_info.timestamp, 
-                                products_info.scan_count
-                            FROM 
-                                products_info
-                            LEFT JOIN 
-                                product_detail ON products_info.EAN_13 = product_detail.EAN_13
-                            WHERE
-                                products_info.EAN_13 = %s
-                        """, (ean_13,))
-                        entries = cursor.fetchall()
-                        response['results'] = [{'scan_id': entry[0], 'EAN_13': entry[1], 'Product_Name': entry[2], 'Status': entry[3], 'timestamp': str(entry[4]), 'scan_count': entry[5]} for entry in entries]
-                        return jsonify(response)
+                            # Examine logic
+                            if selected_status == 'Examine':
+                                cursor.execute("""
+                                    SELECT 
+                                        products_info.scan_id, 
+                                        products_info.EAN_13, 
+                                        product_detail.Product_Name, 
+                                        products_info.Status, 
+                                        products_info.timestamp, 
+                                        products_info.scan_count
+                                    FROM 
+                                        products_info
+                                    LEFT JOIN 
+                                        product_detail ON products_info.EAN_13 = product_detail.EAN_13
+                                    WHERE
+                                        products_info.EAN_13 = %s
+                                """, (ean_13,))
+                                entries = cursor.fetchall()
+                                response['results'] = [{'scan_id': entry[0], 'EAN_13': entry[1], 'Product_Name': entry[2], 'Status': entry[3], 'timestamp': entry[4], 'scan_count': entry[5]} for entry in entries]
+                                run_camera_thread = False
+                                return
 
-                    # Check the most recent status
-                    cursor.execute("SELECT Status FROM products_info WHERE EAN_13=%s ORDER BY timestamp DESC LIMIT 1", (ean_13,))
-                    current_status = cursor.fetchone()
+                            # Check the most recent status
+                            cursor.execute("SELECT Status FROM products_info WHERE EAN_13=%s ORDER BY timestamp DESC LIMIT 1", (ean_13,))
+                            current_status = cursor.fetchone()
 
-                    if selected_status == 'Entry':
-                        if current_status and current_status[0] == 'Entry':
-                            response['error'] = 'Cannot register Entry. Previous Entry exists without an Exit.'
-                            return jsonify(response)
-                    elif selected_status == 'Exit':
-                        if not current_status or current_status[0] != 'Entry':
-                            response['error'] = 'Cannot register Exit. No corresponding Entry found.'
-                            return jsonify(response)
+                            if selected_status == 'Entry':
+                                if current_status and current_status[0] == 'Entry':
+                                    response['error'] = 'Cannot register Entry. Previous Entry exists without an Exit.'
+                                    run_camera_thread = False
+                                    return
+                            elif selected_status == 'Exit':
+                                if not current_status or current_status[0] != 'Entry':
+                                    response['error'] = 'Cannot register Exit. No corresponding Entry found.'
+                                    run_camera_thread = False
+                                    return
 
-                    # Insert new record
-                    timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
-                    scan_count = 1  # Example scan count
-                    sql_insert_query = "INSERT INTO products_info (EAN_13, Status, Timestamp, Scan_Count) VALUES (%s, %s, %s, %s)"
-                    cursor.execute(sql_insert_query, (ean_13, selected_status, timestamp, scan_count))
-                    db_connection.commit()
-                    print("Successfully inserted", selected_status)
-                    used_codes.add(decoded_data)
-                    response['results'].append({'product_id': ean_13})
+                            # Insert new record
+                            timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+                            scan_count = 1  # Example scan count
+                            sql_insert_query = "INSERT INTO products_info (EAN_13, Status, Timestamp, Scan_Count) VALUES (%s, %s, %s, %s)"
+                            cursor.execute(sql_insert_query, (ean_13, selected_status, timestamp, scan_count))
+                            db_connection.commit()
+                            print("Successfully inserted", selected_status)
+                            used_codes.add(decoded_data)
+                            response['results'].append({'product_id': ean_13})
+                            run_camera_thread = False
 
-                else:
-                    print('Sorry, this code has been used')
-                    # You might want to add some logic here to handle used codes
-
+                        else:
+                            print('Sorry, this code has been used')
+                            product_info = retrieve_product_info(decoded_data)
+                            if product_info:
+                                print("Result:", decoded_data, product_info[0], product_info[1])
+            else:
+                cv2.imshow('Testing-code-scan', frame)
+                cv2.waitKey(1)
     except Exception as e:
         print("Error:", str(e))
         response['error'] = str(e)
@@ -635,107 +642,9 @@ def process_image():
             cursor.close()
         if 'db_connection' in locals():
             db_connection.close()
-
-    return jsonify(response)
-
-
-# def handle_camera(selected_status, response):
-#     global run_camera_thread
-#     run_camera_thread = True
-
-#     try:
-#         db_connection = mysql.connector.connect(
-#             host="10.38.176.3",
-#             user="fishtail_123",
-#             password='#fishtail@This7',
-#             port=3306,
-#             database="fishtail_user"
-#         )
-
-#         cursor = db_connection.cursor()
-#         cap = cv2.VideoCapture(0)
-#         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-#         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-#         used_codes = set()
-
-#         while run_camera_thread:
-#             success, frame = cap.read()
-#             if success:
-#                 barcodes = decode(frame)
-#                 if barcodes:
-#                     for code in barcodes:
-#                         decoded_data = code.data.decode('utf-8')
-#                         if decoded_data not in used_codes:
-#                             print('Approved, Scanned Code:', decoded_data)
-#                             ean_13 = decoded_data
-
-#                             # Examine logic
-#                             if selected_status == 'Examine':
-#                                 cursor.execute("""
-#                                     SELECT 
-#                                         products_info.scan_id, 
-#                                         products_info.EAN_13, 
-#                                         product_detail.Product_Name, 
-#                                         products_info.Status, 
-#                                         products_info.timestamp, 
-#                                         products_info.scan_count
-#                                     FROM 
-#                                         products_info
-#                                     LEFT JOIN 
-#                                         product_detail ON products_info.EAN_13 = product_detail.EAN_13
-#                                     WHERE
-#                                         products_info.EAN_13 = %s
-#                                 """, (ean_13,))
-#                                 entries = cursor.fetchall()
-#                                 response['results'] = [{'scan_id': entry[0], 'EAN_13': entry[1], 'Product_Name': entry[2], 'Status': entry[3], 'timestamp': entry[4], 'scan_count': entry[5]} for entry in entries]
-#                                 run_camera_thread = False
-#                                 return
-
-#                             # Check the most recent status
-#                             cursor.execute("SELECT Status FROM products_info WHERE EAN_13=%s ORDER BY timestamp DESC LIMIT 1", (ean_13,))
-#                             current_status = cursor.fetchone()
-
-#                             if selected_status == 'Entry':
-#                                 if current_status and current_status[0] == 'Entry':
-#                                     response['error'] = 'Cannot register Entry. Previous Entry exists without an Exit.'
-#                                     run_camera_thread = False
-#                                     return
-#                             elif selected_status == 'Exit':
-#                                 if not current_status or current_status[0] != 'Entry':
-#                                     response['error'] = 'Cannot register Exit. No corresponding Entry found.'
-#                                     run_camera_thread = False
-#                                     return
-
-#                             # Insert new record
-#                             timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
-#                             scan_count = 1  # Example scan count
-#                             sql_insert_query = "INSERT INTO products_info (EAN_13, Status, Timestamp, Scan_Count) VALUES (%s, %s, %s, %s)"
-#                             cursor.execute(sql_insert_query, (ean_13, selected_status, timestamp, scan_count))
-#                             db_connection.commit()
-#                             print("Successfully inserted", selected_status)
-#                             used_codes.add(decoded_data)
-#                             response['results'].append({'product_id': ean_13})
-#                             run_camera_thread = False
-
-#                         else:
-#                             print('Sorry, this code has been used')
-#                             product_info = retrieve_product_info(decoded_data)
-#                             if product_info:
-#                                 print("Result:", decoded_data, product_info[0], product_info[1])
-#             else:
-#                 cv2.imshow('Testing-code-scan', frame)
-#                 cv2.waitKey(1)
-#     except Exception as e:
-#         print("Error:", str(e))
-#         response['error'] = str(e)
-#     finally:
-#         if 'cursor' in locals():
-#             cursor.close()
-#         if 'db_connection' in locals():
-#             db_connection.close()
-#         if 'cap' in locals():
-#             cap.release()
-#             cv2.destroyAllWindows()
+        if 'cap' in locals():
+            cap.release()
+            cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     app.run(debug=True,host='0.0.0.0')

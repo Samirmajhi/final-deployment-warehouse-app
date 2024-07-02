@@ -213,109 +213,51 @@
     <script src="{{ url_for('static', filename= 'see_table.js') }}"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        // $(document).ready(function () {
-        //         $('#status_form').submit(function(e) {
-        //             e.preventDefault();
-        //             var selectedStatus = $('#status').val();
-        //             console.log('Form submitted with status', selectedStatus);
-        //             $.ajax({
-        //                 url: '/set_status',
-        //                 type: 'POST',
-        //                 data: {selectedStatus: selectedStatus},
-        //                 success: function(response) {
-        //                     alert(response.message);
-        //                     selected_status = selectedStatus;
-        //                     executeCamerascript();
-        //                 },
-        //                 error: function(xhr, status, error) {
-        //                     alert('Error: ' + error);
-        //                 }
-        //             });
-        //         });
-
-                // $('#camera-button').click(function(e) {
-                //     e.preventDefault();
-                //     $.ajax({
-                //         url: '/execute_camera_script',
-                //         type: 'POST',
-                //         contentType: 'application/json',
-                //         data: JSON.stringify({ status: $('#status').val() }),  // Send the selected status
-                //         success: function(response) {
-                //             if (response.error) {
-                //                 alert(response.error);
-                //             } else if (response.results) {
-                //                 alert(JSON.stringify(response.results, null, 2));
-                //             } else if (response.product_id) {
-                //                 alert('Product ID: ' + response.product_id);
-                //             } else {
-                //                 alert('Unexpected response');
-                //             }
-                //         },
-                //         error: function(xhr, status, error) {
-                //             alert('Error: ' + error);
-                //         }
-                //     });
-                // });
-
-                $(document).ready(function () {
-                    let video = document.getElementById('video');
-                    let canvas = document.getElementById('canvas');
-                    let captureButton = document.getElementById('capture');
-
-                    // Access the camera
-                    navigator.mediaDevices.getUserMedia({ video: true })
-                        .then(stream => {
-                            video.srcObject = stream;
-                        })
-                        .catch(err => {
-                            console.error("Error accessing the camera: ", err);
-                        });
-
-                    $('#status_form').submit(function(e) {
-                        e.preventDefault();
-                        var selectedStatus = $('#status').val();
-                        console.log('Form submitted with status', selectedStatus);
-                        $.ajax({
-                            url: '/set_status',
-                            type: 'POST',
-                            data: {selectedStatus: selectedStatus},
-                            success: function(response) {
-                                alert(response.message);
-                            },
-                            error: function(xhr, status, error) {
-                                alert('Error: ' + error);
-                            }
-                        });
-                    });
-
-                    captureButton.addEventListener('click', () => {
-                        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                        let imageData = canvas.toDataURL('image/jpeg');
-                        
-                        // Send image data to server
-                        $.ajax({
-                            url: '/process_image',
-                            type: 'POST',
-                            contentType: 'application/json',
-                            data: JSON.stringify({ 
-                                image: imageData,
-                                status: $('#status').val()
-                            }),
-                            success: function(response) {
-                                if (response.error) {
-                                    alert(response.error);
-                                } else if (response.results) {
-                                    alert(JSON.stringify(response.results, null, 2));
-                                } else {
-                                    alert('Unexpected response');
-                                }
-                            },
-                            error: function(xhr, status, error) {
-                                alert('Error: ' + error);
-                            }
-                        });
+        $(document).ready(function () {
+                $('#status_form').submit(function(e) {
+                    e.preventDefault();
+                    var selectedStatus = $('#status').val();
+                    console.log('Form submitted with status', selectedStatus);
+                    $.ajax({
+                        url: '/set_status',
+                        type: 'POST',
+                        data: {selectedStatus: selectedStatus},
+                        success: function(response) {
+                            alert(response.message);
+                            selected_status = selectedStatus;
+                            executeCamerascript();
+                        },
+                        error: function(xhr, status, error) {
+                            alert('Error: ' + error);
+                        }
                     });
                 });
+
+                $('#camera-button').click(function(e) {
+                    e.preventDefault();
+                    $.ajax({
+                        url: '/execute_camera_script',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ status: $('#status').val() }),  // Send the selected status
+                        success: function(response) {
+                            if (response.error) {
+                                alert(response.error);
+                            } else if (response.results) {
+                                alert(JSON.stringify(response.results, null, 2));
+                            } else if (response.product_id) {
+                                alert('Product ID: ' + response.product_id);
+                            } else {
+                                alert('Unexpected response');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            alert('Error: ' + error);
+                        }
+                    });
+                });
+
+                
 
 
                 // js for populating list of data for set status in set date
