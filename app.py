@@ -18,7 +18,7 @@ app = Flask(__name__,static_url_path='/static')
 CORS(app)
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 db_connection = mysql.connector.connect(
-    host="localhost",
+    host="10.38.176.3",
     user="fishtail_123",
     password='#fishtail@This7',
     port = 3306,
@@ -34,7 +34,7 @@ from flask import g
 def get_db():
     if 'db' not in g:
         g.db = mysql.connector.connect(
-            host="localhost",
+            host="10.38.176.3",
             user="fishtail_123",
             password='#fishtail@This7',
             port=3306,
@@ -183,7 +183,7 @@ logger.addHandler(file_handler)
 @app.route('/add_product', methods=['POST'])
 def add_product():
     db_connection = mysql.connector.connect(
-    host="localhost",
+    host="10.38.176.3",
     user="fishtail_123",
     password='#fishtail@This7',
     port = 3306,
@@ -213,7 +213,7 @@ def add_product():
 def get_recent_scans():
     try:
         db_connection = mysql.connector.connect(
-    host="localhost",
+    host="10.38.176.3",
     user="fishtail_123",
     password='#fishtail@This7',
     port = 3306,
@@ -238,7 +238,7 @@ def get_recent_scans():
 def get_product_details(ean):
     try:
         db_connection = mysql.connector.connect(
-            host="localhost",
+            host="10.38.176.3",
             user="fishtail_123",
             password='#fishtail@This7',
             port=3306,
@@ -332,7 +332,7 @@ def get_products():
     offset = (page - 1) * per_page
 
     db_connection = mysql.connector.connect(
-        host="localhost",
+        host="10.38.176.3",
         user="fishtail_123",
         password='#fishtail@This7',
         port=3306,
@@ -455,7 +455,7 @@ def update_product_status(ean_13, status):
 
 def insert_products_info(ean_13, status, timestamp, scan_count):
     db_connection = mysql.connector.connect(
-                host="localhost",
+                host="10.38.176.3",
                 user="fishtail_123",
                 password='#fishtail@This7',
                 port = 3306,
@@ -550,7 +550,7 @@ def handle_camera(selected_status, response):
 
     try:
         db_connection = mysql.connector.connect(
-            host="localhost",
+            host="10.38.176.3",
             user="fishtail_123",
             password='#fishtail@This7',
             port=3306,
