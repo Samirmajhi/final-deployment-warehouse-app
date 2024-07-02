@@ -3,7 +3,7 @@ window.addEventListener('DOMContentLoaded', function() {
     let currentPage = 1;
 
     function fetchProducts(page) {
-        fetch(`http://127.0.0.1:5000/products?page=${page}&per_page=${perPage}`)
+        fetch(`/products?page=${page}&per_page=${perPage}`)
         .then(response => response.json())
         .then(data => {
             console.log('Data received from API:', data);

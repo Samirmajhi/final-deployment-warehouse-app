@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 document.getElementById('camera').addEventListener('click', executeCameraScript);
 function executeCameraScript() {
-    fetch('http://127.0.0.1:5000/execute_camera_script', {
+    fetch('/execute_camera_script', {
         method: 'POST',
     })
     .then(response=>{

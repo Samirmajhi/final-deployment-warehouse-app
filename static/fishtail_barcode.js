@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function(){
         var name = document.getElementById('name').value;
         var status = document.getElementById('status').value;
         
-        fetch('http://127.0.0.1:5000/add_product',{
+        fetch('/add_product',{
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
