@@ -68,7 +68,7 @@
                 <button type="submit">Submit</button>
             </form>
             <!-- <button id="stop-camera" style="display:none;">Stop Camera</button> -->
-            <div id="camera-container"></div>
+            <div id="camera-container" class="camera-active"></div>
             <button id="start-camera"></button>
           
 
@@ -172,15 +172,17 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         let scanning = false;
-let usedCodes = new Set();
+        let usedCodes = new Set();
 
 
-const cameraContainer = document.getElementById('camera-container');
+        const cameraContainer = document.getElementById('camera-container');
 
 
-const cameraButton = document.getElementById('camera-button');
-const cameraIcon = cameraButton.querySelector('.material-symbols-sharp');
-const cameraText = cameraButton.querySelector('h3');
+        const cameraButton = document.getElementById('camera-button');
+        const cameraIcon = cameraButton.querySelector('.material-symbols-sharp');
+        const cameraText = cameraButton.querySelector('h3');
+
+
 
 cameraButton.addEventListener('click', toggleCamera);
 
@@ -210,45 +212,46 @@ function changeIcon(iconType) {
 }
 
 function startCamera() {
-    Quagga.init({
-        inputStream: {
-            name: "Live",
-            type: "LiveStream",
-            target: cameraContainer,
-            constraints: {
-                width: 640,
-                height: 320,
-                facingMode: "environment"
-            },
-        },
-        decoder: {
-            readers: ["ean_reader"]
-        },
-    }, function(err) {
-        if (err) {
-            console.error("Error starting Quagga:", err);
-            return;
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#camera-container'),
+                    constraints: {
+                        width: 640,
+                        height: 480,
+                        facingMode: "environment"
+                    },
+                },
+                decoder: {
+                    readers: ["ean_reader"]
+                },
+            }, function(err) {
+                if (err) {
+                    console.error("Error starting Quagga:", err);
+                    return;
+                }
+                console.log("Quagga initialization succeeded");
+                Quagga.start();
+                scanning = true;
+                cameraContainer.classList.add('active');
+                document.getElementById('start-camera').style.display = 'none';
+                document.getElementById('stop-camera').style.display = 'inline-block';
+            });
+
+            Quagga.onDetected(handleBarcode);
         }
-        console.log("Quagga initialization succeeded");
-        Quagga.start();
-    });
 
-    Quagga.onDetected(handleBarcode);
-}
-
-
-
-function stopCamera() {
+        function stopCamera() {
     if (scanning) {
         Quagga.stop();
         scanning = false;
-        document.getElementById('camera-button').classList.remove('hidden');
-        // document.getElementById('stop-camera').style.display = 'none';
-        window.location.reload()
-        // Optionally, you can handle actions when stopping the camera without reloading the page.
+        cameraContainer.classList.remove('active');
+        setTimeout(() => {
+            window.location.reload();
+        }, 100); // Add a small delay to ensure the container is hidden before refresh
     }
 }
-
 
         function handleBarcode(result) {
             const code = result.codeResult.code;
@@ -284,9 +287,6 @@ function stopCamera() {
                 alert('An error occurred while processing the barcode');
             });
         }
-
-        
-
     async function fetchRecentScans() {
                 try {
                     const response = await fetch('/recent_scans');
