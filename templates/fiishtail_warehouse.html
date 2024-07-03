@@ -264,29 +264,35 @@ function startCamera() {
         }
 
         function sendBarcodeToServer(barcodeData) {
-            const status = document.getElementById('status').value;
-            fetch('/process_barcode', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ barcode: barcodeData, status: status }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Success:', data);
-                if (data.error) {
-                    alert(data.error);
-                } else {
-                    alert(data.message);
-                }
-                fetchRecentScans();
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                alert('An error occurred while processing the barcode');
-            });
+    const status = document.getElementById('status').value;
+    fetch('/process_barcode', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ barcode: barcodeData, status: status }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Success:', data);
+        if (data.error) {
+            alert(data.error);
+        } else {
+            alert(data.message);
+        }
+        fetchRecentScans();
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        alert('An error occurred while processing the barcode: ' + error.message);
+    });
+}
+
     async function fetchRecentScans() {
                 try {
                     const response = await fetch('/recent_scans');
