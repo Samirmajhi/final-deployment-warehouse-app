@@ -263,7 +263,9 @@ function startCamera() {
             }
         }
 
-        function sendBarcodeToServer(barcodeData) {
+        const TIMEOUT_DURATION = 10000; // Example timeout duration in milliseconds
+
+function sendBarcodeToServer(barcodeData) {
     const status = document.getElementById('status').value;
     fetch('/process_barcode', {
         method: 'POST',
@@ -271,6 +273,7 @@ function startCamera() {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ barcode: barcodeData, status: status }),
+        timeout: TIMEOUT_DURATION, // Set timeout
     })
     .then(response => {
         if (!response.ok) {
@@ -281,9 +284,10 @@ function startCamera() {
     .then(data => {
         console.log('Success:', data);
         if (data.error) {
-            alert(data.error);
-        } else {
-            alert(data.message);
+            console.error('Server returned an error:', data.error);
+            alert('An error occurred: ' + data.error);
+        } else if (data.message) {
+            alert('Success: ' + data.message);
         }
         fetchRecentScans();
     })
@@ -292,6 +296,7 @@ function startCamera() {
         alert('An error occurred while processing the barcode: ' + error.message);
     });
 }
+
 
     async function fetchRecentScans() {
                 try {
