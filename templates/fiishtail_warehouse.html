@@ -276,34 +276,36 @@ function startCamera() {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+            return response.json().then(err => {
+                throw new Error(err.error || 'Server error');
+            });
         }
         return response.json();
     })
     .then(data => {
         console.log('Success:', data);
         if (data.error) {
-            console.error('Server returned an error:', data.error);
-            alert('Error: ' + data.error); // Display error message in alert
-        } else if (data.message) {
-            alert('Success: ' + data.message); // Display success message in alert
+            throw new Error(data.error);
         } else if (data.results) {
-            // Display examination results in alert
-            let resultsMessage = 'Examination Results:\n';
-            data.results.forEach(result => {
-                resultsMessage += `\nScan ID: ${result.scan_id}, EAN-13: ${result.EAN_13}, Product Name: ${result.Product_Name}, Status: ${result.Status}, Timestamp: ${result.timestamp}, Scan Count: ${result.scan_count}`;
-            });
-            alert(resultsMessage);
+            displayExaminationResults(data.results);
+        } else if (data.message) {
+            alert('Success: ' + data.message);
         }
         fetchRecentScans();
     })
     .catch((error) => {
         console.error('Error:', error);
-        alert('An error occurred while processing the barcode: ' + error.message);
+        alert('Error: ' + error.message);
     });
 }
 
-
+function displayExaminationResults(results) {
+    let resultsMessage = 'Examination Results:\n';
+    results.forEach(result => {
+        resultsMessage += `\nScan ID: ${result.scan_id}, EAN-13: ${result.EAN_13}, Product Name: ${result.Product_Name}, Status: ${result.Status}, Timestamp: ${result.timestamp}, Scan Count: ${result.scan_count}`;
+    });
+    alert(resultsMessage);
+}
 
     async function fetchRecentScans() {
                 try {
