@@ -265,7 +265,7 @@ function startCamera() {
 
         const TIMEOUT_DURATION = 10000; // Example timeout duration in milliseconds
 
-function sendBarcodeToServer(barcodeData) {
+        function sendBarcodeToServer(barcodeData) {
     const status = document.getElementById('status').value;
     fetch('/process_barcode', {
         method: 'POST',
@@ -273,7 +273,6 @@ function sendBarcodeToServer(barcodeData) {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({ barcode: barcodeData, status: status }),
-        timeout: TIMEOUT_DURATION, // Set timeout
     })
     .then(response => {
         if (!response.ok) {
@@ -285,9 +284,16 @@ function sendBarcodeToServer(barcodeData) {
         console.log('Success:', data);
         if (data.error) {
             console.error('Server returned an error:', data.error);
-            alert('An error occurred: ' + data.error);
+            alert('Error: ' + data.error); // Display error message in alert
         } else if (data.message) {
-            alert('Success: ' + data.message);
+            alert('Success: ' + data.message); // Display success message in alert
+        } else if (data.results) {
+            // Display examination results in alert
+            let resultsMessage = 'Examination Results:\n';
+            data.results.forEach(result => {
+                resultsMessage += `\nScan ID: ${result.scan_id}, EAN-13: ${result.EAN_13}, Product Name: ${result.Product_Name}, Status: ${result.Status}, Timestamp: ${result.timestamp}, Scan Count: ${result.scan_count}`;
+            });
+            alert(resultsMessage);
         }
         fetchRecentScans();
     })
@@ -296,6 +302,7 @@ function sendBarcodeToServer(barcodeData) {
         alert('An error occurred while processing the barcode: ' + error.message);
     });
 }
+
 
 
     async function fetchRecentScans() {
